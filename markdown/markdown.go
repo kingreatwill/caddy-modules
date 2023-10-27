@@ -10,6 +10,7 @@ import (
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/kingreatwill/caddy-modules/markdown/convert"
+	"go.uber.org/zap"
 )
 
 type Markdown struct {
@@ -50,9 +51,11 @@ func (md *Markdown) Validate() error {
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
 func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
 	_path := r.RequestURI
+	caddy.Log().Info("ServeHTTP:", zap.String("RequestURI", r.RequestURI), zap.String("path", r.URL.Path))
 	if !strings.HasSuffix(_path, ".md") && !strings.HasSuffix(_path, ".markdown") {
 		return next.ServeHTTP(w, r)
 	}
+
 	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer bufPool.Put(buf)
