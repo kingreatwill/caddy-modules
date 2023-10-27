@@ -50,8 +50,8 @@ func (md *Markdown) Validate() error {
 
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
 func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	_path := r.RequestURI
-	caddy.Log().Info("ServeHTTP:", zap.String("RequestURI", r.RequestURI), zap.String("path", r.URL.Path))
+	_path := r.URL.Path
+	caddy.Log().Info("ServeHTTP:", zap.String("path", r.URL.Path))
 	if !strings.HasSuffix(_path, ".md") && !strings.HasSuffix(_path, ".markdown") {
 		return next.ServeHTTP(w, r)
 	}
