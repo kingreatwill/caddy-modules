@@ -164,7 +164,6 @@ func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 }
 
 func (md *Markdown) renderMarkdown(r *http.Request, inputStr, tmplStr string) (string, error) {
-	// TODO: 这里使用哪些markdown插件也是可以配置的
 	// 获取目录数据
 	data, err := md.getTemplateData(r)
 	if err != nil {

@@ -30,3 +30,13 @@ markdown {
 
 ### preview
 ![](preview.png)
+
+### TODO
+- 增加在线人数
+- 文件访问次数
+- 显示创建和修改时间
+- 显示git提交信息和diff
+- 排除文件夹
+- 隐藏文件
+- SEO
+- markdown插件可配置
