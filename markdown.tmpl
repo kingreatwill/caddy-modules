@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://unpkg.com/katex@0.15.1/dist/katex.min.css" integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous"></link>
     <script defer src="https://unpkg.com/katex@0.15.1/dist/katex.min.js" integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx" crossorigin="anonymous"></script>
     <script defer src="https://unpkg.com/katex@0.15.1/dist/contrib/auto-render.min.js" integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR" crossorigin="anonymous"></script>
+    <script src="/static/js/icons.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
             renderMathInElement(document.body, {
@@ -53,11 +54,11 @@
         </div>
         <div>
             <ul>
-                {{range .CurrentDirs}}  {{/* 这种方式无法访问到index或者key的值，需要通过.来访问对应的value */}}
+                {{range .CurrentDirs}}  {{/* 这种方式无法访问到index或者key的值，需要通过.来访问对应的value  */}}
                 {{if .IsFile}}
-                <li class="page"><a href="{{.Href}}"><img src="/static/icons/{{.Icon}}"/>{{.Name}}</a></li>
+                <li class="page"><a href="{{.Href}}"><img src="/static/icons/default_file.svg" onload="this.onload=null; this.src=getFileIconPath('{{.FileExtension}}');"/>{{.Name}}</a></li>
                 {{else}}
-                <li class="folder"><a href="{{.Href}}"><img src="/static/icons/{{.Icon}}"/>{{.Name}}</a></li>
+                <li class="folder"><a href="{{.Href}}"><img src="/static/icons/default_folder.svg" onload="this.onload=null; this.src=getFolderIconPath('{{.FileExtension}}');"/>{{.Name}}</a></li>
                 {{end}}{{end}}
             </ul>
         </div>
@@ -67,6 +68,7 @@
     </div><!--end of layout-main-->
 </div><!--end of layout-->
 <footer>
+Served with <a rel="noopener noreferrer" href="https://github.com/kingreatwill/caddy-modules">caddy markdown</a>
 </footer>
 <script src="https://unpkg.com/mermaid@8.13.3/dist/mermaid.min.js"></script>
 </body>

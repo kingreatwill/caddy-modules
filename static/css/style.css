@@ -91,3 +91,9 @@
     vertical-align: text-bottom;
     padding-right: 10px;
 }
+
+footer {
+	padding: 40px 20px;
+	font-size: 12px;
+	text-align: center;
+}

@@ -246,7 +246,7 @@ func (md *Markdown) getTemplateData(r *http.Request) (data *convert.TemplateData
 		if !strings.HasPrefix(item.Href, "/") {
 			item.Href = "/" + item.Href
 		}
-		item.Icon = template.GetExtensionsIcon(item.FileExtension, fi.IsDir())
+		//item.Icon = template.GetExtensionsIcon(item.FileExtension, fi.IsDir())
 		data.CurrentDirs = append(data.CurrentDirs, item)
 	}
 	sort.Slice(data.CurrentDirs, func(i, j int) bool {

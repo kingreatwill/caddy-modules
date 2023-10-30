@@ -1,6 +1,8 @@
 package markdown
 
 import (
+	"mime"
+
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
@@ -9,6 +11,14 @@ import (
 func init() {
 	caddy.RegisterModule(Markdown{})
 	httpcaddyfile.RegisterHandlerDirective("markdown", parseCaddyfile)
+
+	mime.AddExtensionType(".py", "text/plain")
+	mime.AddExtensionType(".c", "text/plain")
+	mime.AddExtensionType(".h", "text/plain")
+	// mime.AddExtensionType(".go", "text/plain")
+	mime.AddExtensionType(".cs", "text/plain")
+	mime.AddExtensionType(".mod", "text/plain")
+	mime.AddExtensionType(".sum", "text/plain")
 }
 
 // parseCaddyfile sets up the handler from Caddyfile tokens. Syntax:
