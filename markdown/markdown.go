@@ -2,7 +2,10 @@ package markdown
 
 import (
 	"bytes"
+	"context"
+	"io"
 	"net/http"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -10,6 +13,7 @@ import (
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/kingreatwill/caddy-modules/markdown/convert"
+	"github.com/kingreatwill/caddy-modules/markdown/template"
 	"go.uber.org/zap"
 )
 
@@ -51,17 +55,24 @@ func (md *Markdown) Validate() error {
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
 func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
 	_path := r.URL.Path
-	caddy.Log().Info("ServeHTTP:", zap.String("path", r.URL.Path))
-	if !strings.HasSuffix(_path, ".md") && !strings.HasSuffix(_path, ".markdown") {
-		return next.ServeHTTP(w, r)
-	}
+	caddy.Log().Info("ServeHTTP3:", zap.String("path", r.URL.Path))
+	// if !strings.HasSuffix(_path, ".md") && !strings.HasSuffix(_path, ".markdown") {
+	// 	return next.ServeHTTP(w, r)
+	// }
 
 	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer bufPool.Put(buf)
 
 	shouldBuf := func(status int, header http.Header) bool {
-		return true
+		if strings.HasSuffix(_path, ".md") || strings.HasSuffix(_path, ".markdown") {
+			return true
+		}
+		ct := header.Get("Content-Type")
+		if strings.Contains(ct, "text/markdown") {
+			return true
+		}
+		return false
 	}
 	rec := caddyhttp.NewResponseRecorder(w, buf, shouldBuf)
 	err := next.ServeHTTP(rec, r)
@@ -71,12 +82,33 @@ func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 	if !rec.Buffered() {
 		return nil
 	}
-	body, err := md.renderMarkdown(buf.String())
+
+	inputStr := buf.String()
+	// template
+	tmpl, ok := template.Templates[md.Template]
+	if !ok {
+		// if not a built-in template, try as resource file
+		buf.Reset()
+		fs := http.Dir(".")
+		file, err := fs.Open(md.Template)
+		if err == nil {
+			defer file.Close()
+			io.Copy(buf, file)
+		}
+		if buf.Len() > 0 {
+			tmpl = buf.String()
+		} else {
+			tmpl = "{{.MdHtml}}"
+		}
+	}
+	// render markdown
+	html, err := md.renderMarkdown(r.Context(), inputStr, tmpl)
 	if err != nil {
 		return caddyhttp.Error(http.StatusInternalServerError, err)
 	}
+
 	buf.Reset()
-	buf.WriteString(body)
+	buf.WriteString(html)
 	rec.Header().Set("Content-Type", "text/html; charset=utf-8")
 	rec.Header().Set("Content-Length", strconv.Itoa(buf.Len()))
 	rec.Header().Del("Accept-Ranges") // we don't know ranges for dynamically-created content
@@ -88,17 +120,25 @@ func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 	return rec.WriteResponse()
 }
 
-func (md *Markdown) renderMarkdown(inputStr string) (string, error) {
-	// TODO: 对象池
-	// buf := bufPool.Get().(*bytes.Buffer)
-	// buf.Reset()
-	// defer bufPool.Put(buf)
+func (md *Markdown) renderMarkdown(ctx context.Context, inputStr, tmplStr string) (string, error) {
 	// TODO: 这里使用哪些markdown插件也是可以配置的
 	data, err := md.engine.Convert(inputStr)
 	if err != nil {
 		return "", err
 	}
-	return data.MdHtml, nil
+	if data.Title == "" {
+		orignalRequest := ctx.Value(caddyhttp.OriginalRequestCtxKey).(http.Request)
+		data.Title = path.Base(orignalRequest.URL.Path)
+	}
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufPool.Put(buf)
+	// 解析模板
+	err = template.Execute(buf, tmplStr, data)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 // Interface guards

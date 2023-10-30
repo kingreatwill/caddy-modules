@@ -1,6 +1,13 @@
 package template
 
-var templates = map[string]string{
+import (
+	"io"
+	textTemplate "text/template"
+
+	"github.com/kingreatwill/caddy-modules/markdown/convert"
+)
+
+var Templates = map[string]string{
 	"simple": `<!DOCTYPE html>
 <html>
 <head>
@@ -9,7 +16,7 @@ var templates = map[string]string{
 <title>{{.Title}}</title>
 </head>
 <body>
-{{.Body}}
+{{.MdHtml}}
 </body>
 </html>
 `,
@@ -81,7 +88,17 @@ footnote * {
 </style>
 </head>
 <body>
-{{.Body}}
+{{.MdHtml}}
 </body>
 </html>`,
+}
+
+
+func Execute(wr io.Writer, tmplStr string,data *convert.TemplateData) error {
+	// 解析模板
+	tmpl, err := textTemplate.New("markdown").Parse(tmplStr); 
+	if err != nil {
+		return err
+	}
+	return tmpl.Execute(wr, data)
 }

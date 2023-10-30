@@ -3,6 +3,7 @@ package convert
 import (
 	"bytes"
 	"fmt"
+	"sync"
 
 	katex "github.com/kingreatwill/goldmark-katex"
 	"github.com/yuin/goldmark"
@@ -24,6 +25,7 @@ func New() *MarkdownConvert {
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.GFM,
+			extension.Footnote,
 			katex.KaTeX,
 			emoji.Emoji,
 			//mathjax.MathJax,
@@ -70,12 +72,23 @@ type TemplateFileItemData struct {
 	Icon          string `remark:"Icon"`
 }
 
+var bufPool = sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Buffer)
+	},
+}
+
 func (c *MarkdownConvert) Convert(mdStr string) (data *TemplateData, err error){
 	data = new(TemplateData)
 	data.Content = []byte(mdStr)
-	var buf bytes.Buffer
+
+	// var buf bytes.Buffer
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+	defer bufPool.Put(buf)
+
 	context := parser.NewContext()
-	if err = c.engine.Convert(data.Content, &buf, parser.WithContext(context)); err != nil {		
+	if err = c.engine.Convert(data.Content, buf, parser.WithContext(context)); err != nil {		
 		return nil, err
 	}
 

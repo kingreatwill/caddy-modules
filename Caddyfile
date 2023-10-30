@@ -2,6 +2,11 @@
     order markdown before file_server
 }
 :2019 {
-    markdown
-    file_server
+    markdown {
+        template /markdown.tmpl
+    }
+    file_server browse {
+        hide .git
+        index README.md index.html
+    }
 }
