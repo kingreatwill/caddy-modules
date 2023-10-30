@@ -78,8 +78,8 @@ var bufPool = sync.Pool{
 	},
 }
 
-func (c *MarkdownConvert) Convert(mdStr string) (data *TemplateData, err error){
-	data = new(TemplateData)
+func (c *MarkdownConvert) Convert(mdStr string, data *TemplateData) (err error){
+	
 	data.Content = []byte(mdStr)
 
 	// var buf bytes.Buffer
@@ -89,7 +89,7 @@ func (c *MarkdownConvert) Convert(mdStr string) (data *TemplateData, err error){
 
 	context := parser.NewContext()
 	if err = c.engine.Convert(data.Content, buf, parser.WithContext(context)); err != nil {		
-		return nil, err
+		return err
 	}
 
 	data.MdHtml = buf.String()
@@ -119,5 +119,5 @@ func (c *MarkdownConvert) Convert(mdStr string) (data *TemplateData, err error){
 	} else if value, ok := metaData["summary"]; ok {
 		data.Description = fmt.Sprintf("%v", value)
 	}
-	return data, nil
+	return nil
 }

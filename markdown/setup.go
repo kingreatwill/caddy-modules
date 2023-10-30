@@ -36,6 +36,11 @@ func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error)
 				if len(md.Hide) == 0 {
 					return nil, h.ArgErr()
 				}
+			case "index":
+				md.IndexNames = h.RemainingArgs()
+				if len(md.IndexNames) == 0 {
+					return nil, h.ArgErr()
+				}
 			}
 		}
 	}

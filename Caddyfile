@@ -7,6 +7,6 @@
     }
     file_server browse {
         hide .git
-        index README.md index.html
+        index README.md index.html index.htm
     }
 }

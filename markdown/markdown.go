@@ -2,13 +2,14 @@ package markdown
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,14 +18,16 @@ import (
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/kingreatwill/caddy-modules/markdown/convert"
 	"github.com/kingreatwill/caddy-modules/markdown/template"
-	"go.uber.org/zap"
 )
 
 type Markdown struct {
-	Root       string   `json:"root,omitempty"`
-	Template   string   `json:"template,omitempty"`
-	Hide       []string `json:"hide,omitempty"`
-	MIMETypes  []string `json:"mime_types,omitempty"`
+	Root      string   `json:"root,omitempty"`
+	Template  string   `json:"template,omitempty"`
+	Hide      []string `json:"hide,omitempty"`
+	MIMETypes []string `json:"mime_types,omitempty"`
+	// The names of files to try as index files if a folder is requested.
+	// Default: index.html index.htm
+	IndexNames []string `json:"index,omitempty"`
 	engine     *convert.MarkdownConvert
 	fileSystem fs.FS
 }
@@ -52,6 +55,12 @@ func (md *Markdown) Provision(ctx caddy.Context) error {
 	if md.Root == "" {
 		md.Root = "{http.vars.root}"
 	}
+	if md.MIMETypes == nil {
+		md.MIMETypes = []string{"text/markdown"}
+	}
+	if md.IndexNames == nil {
+		md.IndexNames = defaultIndexNames
+	}
 	// for hide paths that are static (i.e. no placeholders), we can transform them into
 	// absolute paths before the server starts for very slight performance improvement
 	for i, h := range md.Hide {
@@ -71,32 +80,45 @@ func (md *Markdown) Validate() error {
 }
 
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
-func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	_path := r.URL.Path
-	repl := r.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
-	root := repl.ReplaceAll(md.Root, ".")
-	filename := strings.TrimSuffix(caddyhttp.SanitizedPathJoin(root, r.URL.Path), "/")
-	caddy.Log().Info("ServeHTTP3:", zap.String("path", r.URL.Path), zap.String("root", root), zap.String("filename", filename))
+func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) (err error) {
+
+	// repl := r.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
+	// root := repl.ReplaceAll(md.Root, ".")
+	// filename := strings.TrimSuffix(caddyhttp.SanitizedPathJoin(root, r.URL.Path), "/")
+
 	// if !strings.HasSuffix(_path, ".md") && !strings.HasSuffix(_path, ".markdown") {
 	// 	return next.ServeHTTP(w, r)
 	// }
+
+	// info, err := fs.Stat(md.fileSystem, filename)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// caddy.Log().Info("ServeHTTP3:",
+	// 	zap.String("path", r.URL.Path),
+	// 	zap.String("root", root),
+	// 	zap.String("filename", filename),
+	// 	zap.Bool("IsDir", info.IsDir()))
 
 	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
 	defer bufPool.Put(buf)
 
 	shouldBuf := func(status int, header http.Header) bool {
-		if strings.HasSuffix(_path, ".md") || strings.HasSuffix(_path, ".markdown") {
+		if strings.HasSuffix(r.URL.Path, ".md") || strings.HasSuffix(r.URL.Path, ".markdown") {
 			return true
 		}
 		ct := header.Get("Content-Type")
-		if strings.Contains(ct, "text/markdown") {
-			return true
+		for _, mt := range md.MIMETypes {
+			if strings.Contains(ct, mt) {
+				return true
+			}
 		}
 		return false
 	}
 	rec := caddyhttp.NewResponseRecorder(w, buf, shouldBuf)
-	err := next.ServeHTTP(rec, r)
+	err = next.ServeHTTP(rec, r)
 	if err != nil {
 		return err
 	}
@@ -123,7 +145,7 @@ func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 		}
 	}
 	// render markdown
-	html, err := md.renderMarkdown(r.Context(), inputStr, tmpl)
+	html, err := md.renderMarkdown(r, inputStr, tmpl)
 	if err != nil {
 		return caddyhttp.Error(http.StatusInternalServerError, err)
 	}
@@ -141,14 +163,20 @@ func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 	return rec.WriteResponse()
 }
 
-func (md *Markdown) renderMarkdown(ctx context.Context, inputStr, tmplStr string) (string, error) {
+func (md *Markdown) renderMarkdown(r *http.Request, inputStr, tmplStr string) (string, error) {
 	// TODO: 这里使用哪些markdown插件也是可以配置的
-	data, err := md.engine.Convert(inputStr)
+	// 获取目录数据
+	data, err := md.getTemplateData(r)
+	if err != nil {
+		return "", err
+	}
+	// 转换
+	err = md.engine.Convert(inputStr, data)
 	if err != nil {
 		return "", err
 	}
 	if data.Title == "" {
-		orignalRequest := ctx.Value(caddyhttp.OriginalRequestCtxKey).(http.Request)
+		orignalRequest := r.Context().Value(caddyhttp.OriginalRequestCtxKey).(http.Request)
 		data.Title = path.Base(orignalRequest.URL.Path)
 	}
 	buf := bufPool.Get().(*bytes.Buffer)
@@ -160,6 +188,89 @@ func (md *Markdown) renderMarkdown(ctx context.Context, inputStr, tmplStr string
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func (md *Markdown) getTemplateData(r *http.Request) (data *convert.TemplateData, err error) {
+	data = &convert.TemplateData{
+		CurrentDirs: []convert.TemplateFileItemData{},
+	}
+	repl := r.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
+	root := repl.ReplaceAll(md.Root, ".")
+	filename := strings.TrimSuffix(caddyhttp.SanitizedPathJoin(root, r.URL.Path), "/")
+
+	info, err := fs.Stat(md.fileSystem, filename)
+	if err != nil {
+		return nil, err
+	}
+
+	if filename != "." {
+		data.UpperPath = strings.ReplaceAll(filepath.Dir(filename), "\\", "/")
+		if !strings.HasSuffix(data.UpperPath, "/") {
+			data.UpperPath = data.UpperPath + "/"
+		}
+		if !strings.HasPrefix(data.UpperPath, "/") {
+			data.UpperPath = "/" + data.UpperPath
+		}
+	}
+
+	listDir := filename
+	data.CurrentFile = filename
+	data.CurrentIsFile = !info.IsDir()
+
+	if !info.IsDir() {
+		listDir = filepath.Dir(filename)
+	}
+	for _, fi := range md.listdir(listDir) {
+		if strings.HasPrefix(fi.Name(), ".") || strings.HasPrefix(fi.Name(), "_") {
+			continue
+		}
+		item := convert.TemplateFileItemData{
+			Name:          fi.Name(),
+			IsFile:        !fi.IsDir(),
+			FileExtension: fi.Name(),
+			Href:          strings.ReplaceAll(path.Join(listDir, fi.Name()), "\\", "/"),
+		}
+		if !fi.IsDir() {
+			item.FileExtension = path.Ext(fi.Name())
+			if info.IsDir() {
+				for _, index := range md.IndexNames {
+					if index == fi.Name() {
+						data.CurrentFile = item.Href
+						data.CurrentIsFile = true
+					}
+				}
+			}
+		} else {
+			item.Href = item.Href + "/"
+		}
+		if !strings.HasPrefix(item.Href, "/") {
+			item.Href = "/" + item.Href
+		}
+		item.Icon = template.GetExtensionsIcon(item.FileExtension, fi.IsDir())
+		data.CurrentDirs = append(data.CurrentDirs, item)
+	}
+	sort.Slice(data.CurrentDirs, func(i, j int) bool {
+		// 1. IsFile:升序排序
+		if data.CurrentDirs[i].IsFile != data.CurrentDirs[j].IsFile {
+			return data.CurrentDirs[j].IsFile
+		}
+		// 2. Name:升序排序
+		return strings.ToLower(data.CurrentDirs[i].Name) < strings.ToLower(data.CurrentDirs[j].Name)
+	})
+	return
+}
+
+func (md *Markdown) listdir(pathname string) (fileInfos []fs.FileInfo) {
+	dirEntries, err := os.ReadDir(pathname)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	for _, de := range dirEntries {
+		fi, _ := de.Info()
+		fileInfos = append(fileInfos, fi)
+	}
+	return
 }
 
 // osFS is a simple fs.FS implementation that uses the local
@@ -177,7 +288,7 @@ func (osFS) Glob(pattern string) ([]string, error)      { return filepath.Glob(p
 func (osFS) ReadDir(name string) ([]fs.DirEntry, error) { return os.ReadDir(name) }
 func (osFS) ReadFile(name string) ([]byte, error)       { return os.ReadFile(name) }
 
-var defaultIndexNames = []string{"index.html", "index.txt"}
+var defaultIndexNames = []string{"README.md", "README.markdown", "readme.markdown", "readme.md"}
 
 const (
 	minBackoff, maxBackoff = 2, 5
