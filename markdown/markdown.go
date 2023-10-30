@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"io/fs"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,9 +21,12 @@ import (
 )
 
 type Markdown struct {
-	Template  string   `json:"template,omitempty"`
-	MIMETypes []string `json:"mime_types,omitempty"`
-	engine    *convert.MarkdownConvert
+	Root       string   `json:"root,omitempty"`
+	Template   string   `json:"template,omitempty"`
+	Hide       []string `json:"hide,omitempty"`
+	MIMETypes  []string `json:"mime_types,omitempty"`
+	engine     *convert.MarkdownConvert
+	fileSystem fs.FS
 }
 
 var bufPool = sync.Pool{
@@ -34,7 +40,8 @@ func (Markdown) CaddyModule() caddy.ModuleInfo {
 		ID: "http.handlers.markdown",
 		New: func() caddy.Module {
 			return &Markdown{
-				engine: convert.New(),
+				engine:     convert.New(),
+				fileSystem: osFS{},
 			}
 		},
 	}
@@ -42,7 +49,18 @@ func (Markdown) CaddyModule() caddy.ModuleInfo {
 
 // Provision sets up the module. #caddy.Provisioner
 func (md *Markdown) Provision(ctx caddy.Context) error {
-	// TODO: set up the module
+	if md.Root == "" {
+		md.Root = "{http.vars.root}"
+	}
+	// for hide paths that are static (i.e. no placeholders), we can transform them into
+	// absolute paths before the server starts for very slight performance improvement
+	for i, h := range md.Hide {
+		if !strings.Contains(h, "{") && strings.Contains(h, separator) {
+			if abs, err := filepath.Abs(h); err == nil {
+				md.Hide[i] = abs
+			}
+		}
+	}
 	return nil
 }
 
@@ -55,7 +73,10 @@ func (md *Markdown) Validate() error {
 // ServeHTTP implements caddyhttp.MiddlewareHandler.
 func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
 	_path := r.URL.Path
-	caddy.Log().Info("ServeHTTP3:", zap.String("path", r.URL.Path))
+	repl := r.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
+	root := repl.ReplaceAll(md.Root, ".")
+	filename := strings.TrimSuffix(caddyhttp.SanitizedPathJoin(root, r.URL.Path), "/")
+	caddy.Log().Info("ServeHTTP3:", zap.String("path", r.URL.Path), zap.String("root", root), zap.String("filename", filename))
 	// if !strings.HasSuffix(_path, ".md") && !strings.HasSuffix(_path, ".markdown") {
 	// 	return next.ServeHTTP(w, r)
 	// }
@@ -141,10 +162,37 @@ func (md *Markdown) renderMarkdown(ctx context.Context, inputStr, tmplStr string
 	return buf.String(), nil
 }
 
+// osFS is a simple fs.FS implementation that uses the local
+// file system. (We do not use os.DirFS because we do our own
+// rooting or path prefixing without being constrained to a single
+// root folder. The standard os.DirFS implementation is problematic
+// since roots can be dynamic in our application.)
+//
+// osFS also implements fs.StatFS, fs.GlobFS, fs.ReadDirFS, and fs.ReadFileFS.
+type osFS struct{}
+
+func (osFS) Open(name string) (fs.File, error)          { return os.Open(name) }
+func (osFS) Stat(name string) (fs.FileInfo, error)      { return os.Stat(name) }
+func (osFS) Glob(pattern string) ([]string, error)      { return filepath.Glob(pattern) }
+func (osFS) ReadDir(name string) ([]fs.DirEntry, error) { return os.ReadDir(name) }
+func (osFS) ReadFile(name string) ([]byte, error)       { return os.ReadFile(name) }
+
+var defaultIndexNames = []string{"index.html", "index.txt"}
+
+const (
+	minBackoff, maxBackoff = 2, 5
+	separator              = string(filepath.Separator)
+)
+
 // Interface guards
 var (
 	_ caddy.Provisioner           = (*Markdown)(nil)
 	_ caddy.Validator             = (*Markdown)(nil)
 	_ caddyhttp.MiddlewareHandler = (*Markdown)(nil)
 	// _ caddyfile.Unmarshaler       = (*Markdown)(nil)
+
+	_ fs.StatFS     = (*osFS)(nil)
+	_ fs.GlobFS     = (*osFS)(nil)
+	_ fs.ReadDirFS  = (*osFS)(nil)
+	_ fs.ReadFileFS = (*osFS)(nil)
 )

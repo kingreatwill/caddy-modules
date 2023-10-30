@@ -27,6 +27,15 @@ func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error)
 				if !h.Args(&md.Template) {
 					return nil, h.ArgErr()
 				}
+			case "root":
+				if !h.Args(&md.Root) {
+					return nil, h.ArgErr()
+				}
+			case "hide":
+				md.Hide = h.RemainingArgs()
+				if len(md.Hide) == 0 {
+					return nil, h.ArgErr()
+				}
 			}
 		}
 	}
