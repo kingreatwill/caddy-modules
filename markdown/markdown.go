@@ -251,6 +251,7 @@ func (md *Markdown) getTemplateData(r *http.Request) (data *convert.TemplateData
 		} else {
 			item.Href = item.Href + "/"
 		}
+		caddy.Log().Info("item.Href:", zap.String("root", root), zap.String("item.Href", item.Href))
 		if !strings.HasPrefix(item.Href, root) {
 			item.Href = strings.Replace(item.Href, root, "", 1)
 		}
