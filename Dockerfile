@@ -1,5 +1,5 @@
 FROM caddy:2.7.5-builder-alpine AS builder
-
+COPY . .
 RUN xcaddy build \
     --with github.com/kingreatwill/caddy-modules/markdown@latest=./markdown
 
