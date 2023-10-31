@@ -18,6 +18,7 @@ import (
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/kingreatwill/caddy-modules/markdown/convert"
 	"github.com/kingreatwill/caddy-modules/markdown/template"
+	"go.uber.org/zap"
 )
 
 type Markdown struct {
@@ -135,6 +136,9 @@ func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 		root := md.getRoot(r)
 		fs := http.Dir(root)
 		file, err := fs.Open(md.Template)
+		if err != nil {
+			caddy.Log().Info("template:", zap.String("root", root), zap.String("Template", md.Template), zap.Error(err))
+		}
 		if err == nil {
 			defer file.Close()
 			io.Copy(buf, file)
