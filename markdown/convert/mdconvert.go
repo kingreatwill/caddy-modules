@@ -3,6 +3,7 @@ package convert
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"sync"
 
 	katex "github.com/kingreatwill/goldmark-katex"
@@ -100,15 +101,28 @@ func (c *MarkdownConvert) Convert(mdStr string, data *TemplateData) (err error) 
 		data.Title = fmt.Sprintf("%v", value)
 	}
 
+	keywordsFunc := func (value interface{})  {
+		if newValue, ok := value.([]interface{}); ok {
+			var tags []string
+			for _, tag := range newValue {
+				tags = append(tags, fmt.Sprintf("%v", tag))
+			}
+			data.Keywords = strings.Join(tags, ",")
+		} else {
+			data.Keywords = fmt.Sprintf("%v", value)
+		}
+	} 
 	if value, ok := metaData["Keywords"]; ok {
-		data.Keywords = fmt.Sprintf("%v", value)
+		keywordsFunc(value)
 	} else if value, ok := metaData["keywords"]; ok {
-		data.Keywords = fmt.Sprintf("%v", value)
+		keywordsFunc(value)
 	} else if value, ok := metaData["Tags"]; ok {
-		data.Keywords = fmt.Sprintf("%v", value)
+		keywordsFunc(value)
 	} else if value, ok := metaData["tags"]; ok {
-		data.Keywords = fmt.Sprintf("%v", value)
+		keywordsFunc(value)
 	}
+
+
 	if value, ok := metaData["Description"]; ok {
 		data.Description = fmt.Sprintf("%v", value)
 	} else if value, ok := metaData["description"]; ok {
