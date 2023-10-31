@@ -213,13 +213,20 @@ func (md *Markdown) getTemplateData(r *http.Request) (data *convert.TemplateData
 		return nil, err
 	}
 
-	if filename != "." {
-		data.UpperPath = strings.ReplaceAll(filepath.Dir(filename), "\\", "/")
-		if !strings.HasSuffix(data.UpperPath, "/") {
-			data.UpperPath = data.UpperPath + "/"
-		}
-		if !strings.HasPrefix(data.UpperPath, "/") {
-			data.UpperPath = "/" + data.UpperPath
+	if filename != root {
+		if filepath.Dir(filename) != root {
+			data.UpperPath = strings.ReplaceAll(filepath.Dir(filename), "\\", "/")
+
+			if strings.HasPrefix(data.UpperPath, root) {
+				data.UpperPath = strings.Replace(data.UpperPath, root, "", 1)
+			}
+
+			if !strings.HasSuffix(data.UpperPath, "/") {
+				data.UpperPath = data.UpperPath + "/"
+			}
+			if !strings.HasPrefix(data.UpperPath, "/") {
+				data.UpperPath = "/" + data.UpperPath
+			}
 		}
 	}
 
