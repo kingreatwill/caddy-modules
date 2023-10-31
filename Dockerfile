@@ -10,4 +10,4 @@ COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 # RUN /usr/bin/caddy -version
 # RUN /usr/bin/caddy -plugins
 
-# docker build -t caddy-markdown:v0.0.1 .
+# docker build --no-cache -t caddy-markdown:v0.0.1 .
