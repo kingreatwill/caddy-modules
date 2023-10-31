@@ -47,7 +47,6 @@ func New() *MarkdownConvert {
 	}
 }
 
-
 type TemplateData struct {
 	SiteUrl     string `remark:"站点地址"`
 	Title       string `remark:"<title>Title"`
@@ -78,8 +77,8 @@ var bufPool = sync.Pool{
 	},
 }
 
-func (c *MarkdownConvert) Convert(mdStr string, data *TemplateData) (err error){
-	
+func (c *MarkdownConvert) Convert(mdStr string, data *TemplateData) (err error) {
+
 	data.Content = []byte(mdStr)
 
 	// var buf bytes.Buffer
@@ -88,7 +87,7 @@ func (c *MarkdownConvert) Convert(mdStr string, data *TemplateData) (err error){
 	defer bufPool.Put(buf)
 
 	context := parser.NewContext()
-	if err = c.engine.Convert(data.Content, buf, parser.WithContext(context)); err != nil {		
+	if err = c.engine.Convert(data.Content, buf, parser.WithContext(context)); err != nil {
 		return err
 	}
 
