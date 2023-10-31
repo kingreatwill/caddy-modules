@@ -242,6 +242,9 @@ func (md *Markdown) getTemplateData(r *http.Request) (data *convert.TemplateData
 		} else {
 			item.Href = item.Href + "/"
 		}
+		if !strings.HasPrefix(item.Href, root) {
+			item.Href = strings.Replace(item.Href, root, "", 1)
+		}
 		if !strings.HasPrefix(item.Href, "/") {
 			item.Href = "/" + item.Href
 		}
