@@ -132,7 +132,8 @@ func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 	if !ok {
 		// if not a built-in template, try as resource file
 		buf.Reset()
-		fs := http.Dir(".")
+		root := md.getRoot(r)
+		fs := http.Dir(root)
 		file, err := fs.Open(md.Template)
 		if err == nil {
 			defer file.Close()
@@ -189,12 +190,16 @@ func (md *Markdown) renderMarkdown(r *http.Request, inputStr, tmplStr string) (s
 	return buf.String(), nil
 }
 
+func (md *Markdown) getRoot(r *http.Request) string {
+	repl := r.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
+	return repl.ReplaceAll(md.Root, ".")
+}
+
 func (md *Markdown) getTemplateData(r *http.Request) (data *convert.TemplateData, err error) {
 	data = &convert.TemplateData{
 		CurrentDirs: []convert.TemplateFileItemData{},
 	}
-	repl := r.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
-	root := repl.ReplaceAll(md.Root, ".")
+	root := md.getRoot(r)
 	filename := strings.TrimSuffix(caddyhttp.SanitizedPathJoin(root, r.URL.Path), "/")
 
 	info, err := fs.Stat(md.fileSystem, filename)
