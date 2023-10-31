@@ -31,6 +31,7 @@ type Markdown struct {
 	IndexNames []string `json:"index,omitempty"`
 	engine     *convert.MarkdownConvert
 	fileSystem fs.FS
+	logger     *zap.Logger
 }
 
 var bufPool = sync.Pool{
@@ -53,6 +54,7 @@ func (Markdown) CaddyModule() caddy.ModuleInfo {
 
 // Provision sets up the module. #caddy.Provisioner
 func (md *Markdown) Provision(ctx caddy.Context) error {
+	md.logger = ctx.Logger()
 	if md.Root == "" {
 		md.Root = "{http.vars.root}"
 	}
@@ -137,7 +139,7 @@ func (md *Markdown) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddy
 		fs := http.Dir(root)
 		file, err := fs.Open(md.Template)
 		if err != nil {
-			caddy.Log().Info("template:", zap.String("root", root), zap.String("Template", md.Template), zap.Error(err))
+			md.logger.Error("template error:", zap.String("root", root), zap.String("Template", md.Template), zap.Error(err))
 		}
 		if err == nil {
 			defer file.Close()
@@ -251,8 +253,7 @@ func (md *Markdown) getTemplateData(r *http.Request) (data *convert.TemplateData
 		} else {
 			item.Href = item.Href + "/"
 		}
-		caddy.Log().Info("item.Href:", zap.String("root", root), zap.String("item.Href", item.Href))
-		if !strings.HasPrefix(item.Href, root) {
+		if strings.HasPrefix(item.Href, root) {
 			item.Href = strings.Replace(item.Href, root, "", 1)
 		}
 		if !strings.HasPrefix(item.Href, "/") {
