@@ -1,7 +1,8 @@
 FROM caddy:2.7.5-builder-alpine AS builder
 COPY . .
 RUN xcaddy build \
-    --with github.com/kingreatwill/caddy-modules/markdown@latest=./markdown
+    --with github.com/kingreatwill/caddy-modules/markdown@latest=./markdown \
+    --with github.com/caddyserver/forwardproxy@caddy2
 
 FROM caddy:2.7.5-alpine
 LABEL maintainer "wcoder <350840291@qq.com>"
