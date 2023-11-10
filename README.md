@@ -51,6 +51,7 @@ https://note.wcoder.com/
 - [x] 隐藏文件(目前默认以.和_开头的文件不显示)
 - [x] SEO
 - [ ] markdown插件可配置
+- [ ] sitemap
 
 #### 显示创建和修改时间
 ```bash
