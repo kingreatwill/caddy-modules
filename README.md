@@ -52,6 +52,7 @@ https://note.wcoder.com/
 - [x] SEO
 - [ ] markdown插件可配置
 - [ ] sitemap
+- [ ] 定时更新根目录
 
 #### 显示创建和修改时间
 ```bash
@@ -68,3 +69,18 @@ $ git ls-tree -r --name-only HEAD | while read filename; do
 > [How to retrieve the last modification date of all files in a Git repository](https://serverfault.com/questions/401437/how-to-retrieve-the-last-modification-date-of-all-files-in-a-git-repository/401450#401450)
 
 > [Finding the date/time a file was first added to a Git repository](https://stackoverflow.com/questions/2390199/finding-the-date-time-a-file-was-first-added-to-a-git-repository/2390382#2390382)
+
+#### crontab
+定时更新根目录
+```sh
+#!/bin/bash  
+
+(date "+%Y-%m-%d %H:%M:%S")
+cd /data/dockerv/caddy/srv/note.wcoder.com
+git pull
+
+
+# 
+# crontab -e
+# 0 0 * * * sh /root/code/crontab.sh >> /root/code/crontab.log
+```
