@@ -53,6 +53,7 @@ https://note.wcoder.com/
 - [ ] markdown插件可配置
 - [ ] sitemap
 - [ ] 定时更新根目录
+- [ ] 留言回复(可以对接到issue)
 
 #### 显示创建和修改时间
 ```bash
