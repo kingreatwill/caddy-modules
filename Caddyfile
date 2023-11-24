@@ -1,6 +1,6 @@
 {
     order markdown before file_server
-    order sentry before markdown
+    order sentry first
 }
 :2019 {
     markdown {
