@@ -4,6 +4,7 @@ Summary: caddy markdown
 Tags:
     - markdown
     - caddy
+    - sentry
 ---
 
 # caddy-modules
