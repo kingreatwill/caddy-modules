@@ -1,4 +1,4 @@
-package opentelemetry
+package tracing_sentry
 
 import (
 	"context"

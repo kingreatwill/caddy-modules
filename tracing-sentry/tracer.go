@@ -1,13 +1,14 @@
-package opentelemetry
+package tracing_sentry
 
 import (
 	"context"
 	"fmt"
 	"net/http"
 
+	"github.com/getsentry/sentry-go"
+	sentryotel "github.com/getsentry/sentry-go/otel"
+
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/contrib/propagators/autoprop"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -59,18 +60,11 @@ func newOpenTelemetryWrapper(
 		return ot, fmt.Errorf("creating resource error: %w", err)
 	}
 
-	traceExporter, err := otlptracehttp.New(ctx)
-	if err != nil {
-		return ot, fmt.Errorf("creating trace exporter error: %w", err)
-	}
-
-	ot.propagators = autoprop.NewTextMapPropagator()
-
-	tracerProvider := globalTracerProvider.getTracerProvider(
-		sdktrace.WithBatcher(traceExporter),
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithSpanProcessor(sentryotel.NewSentrySpanProcessor()),
 		sdktrace.WithResource(res),
 	)
-
+	ot.propagators = sentryotel.NewSentryPropagator()
 	ot.handler = otelhttp.NewHandler(http.HandlerFunc(ot.serveHTTP),
 		ot.spanName,
 		otelhttp.WithTracerProvider(tracerProvider),
@@ -103,7 +97,11 @@ func (ot *openTelemetryWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 	ot.handler.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), nextCallCtxKey, n)))
 
-	return n.err
+	err := n.err
+	if err != nil {
+		sentry.CaptureException(err)
+	}
+	return err
 }
 
 // cleanup flush all remaining data and shutdown a tracerProvider

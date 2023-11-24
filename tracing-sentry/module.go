@@ -1,8 +1,12 @@
-package opentelemetry
+package tracing_sentry
 
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
+
+	"github.com/getsentry/sentry-go"
 
 	"go.uber.org/zap"
 
@@ -14,7 +18,40 @@ import (
 
 func init() {
 	caddy.RegisterModule(Tracing{})
-	httpcaddyfile.RegisterHandlerDirective("opentelemetry", parseCaddyfile)
+	httpcaddyfile.RegisterHandlerDirective("sentry", parseCaddyfile)
+	// 初始化sentry
+	sampleRate, _ := strconv.ParseFloat(os.Getenv("SENTRY_SAMPLE_RATE"), 64)
+	if sampleRate == 0.0 {
+		sampleRate = 1.0
+	}
+	serverName := os.Getenv("SENTRY_SERVICE_NAME")
+	if serverName == "" {
+		serverName = os.Getenv("OTEL_SERVICE_NAME")
+	}
+	if serverName == "" {
+		serverName = os.Getenv("SERVICE_NAME")
+	}
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:                "",
+		EnableTracing:      true,
+		SampleRate:         sampleRate,
+		TracesSampleRate:   sampleRate,
+		ProfilesSampleRate: sampleRate,
+		Debug:              os.Getenv("SENTRY_DEBUG") == "true",
+		ServerName:         serverName, // 默认hostname
+		//TracesSampler: sentry.TracesSampler(func(ctx sentry.SamplingContext) float64 {
+		//	// Don't sample health checks.
+		//	if ctx.Span.Name == "GET /health" {
+		//		return 0.0
+		//	}
+		//
+		//	return 1.0
+		//}),
+	})
+	if err != nil {
+		fmt.Println("sentry init error", err)
+	}
+
 }
 
 // Tracing implements an HTTP handler that adds support for distributed tracing,
@@ -36,7 +73,7 @@ type Tracing struct {
 // CaddyModule returns the Caddy module information.
 func (Tracing) CaddyModule() caddy.ModuleInfo {
 	return caddy.ModuleInfo{
-		ID:  "http.handlers.tracing",
+		ID:  "http.handlers.sentry",
 		New: func() caddy.Module { return new(Tracing) },
 	}
 }

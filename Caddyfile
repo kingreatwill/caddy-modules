@@ -1,5 +1,6 @@
 {
     order markdown before file_server
+    order sentry before markdown
 }
 :2019 {
     markdown {
@@ -8,5 +9,8 @@
     file_server browse {
         hide .git
         index README.md index.html index.htm
+    }
+    sentry {
+        span {path}
     }
 }
