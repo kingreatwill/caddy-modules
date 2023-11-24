@@ -15,16 +15,10 @@ caddy markdown server
 
 ### debug
 
-```
-go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
-xcaddy build v2.7.5 --with github.com/kingreatwill/caddy-modules/markdown@v0.0.1=./markdown
-chmod +x caddy
-./caddy run
-```
 
 ```
-export SENTRY_DSN="https://5851bf0c021cfb2f29e370483922200c@o4506274015936512.ingest.sentry.io/4506274021507072"
-
+export SENTRY_DSN="xx"
+export SENTRY_DEBUG="true"
 go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 xcaddy build v2.7.5 --with github.com/kingreatwill/caddy-modules/markdown@v0.0.1=./markdown \
   --with github.com/kingreatwill/caddy-modules/tracing-sentry@v0.0.1=./tracing-sentry
