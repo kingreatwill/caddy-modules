@@ -1,8 +1,10 @@
 {
+    debug
+    admin localhost:2019
     order markdown before file_server
     order sentry first
 }
-:2019 {
+:2018 {
     markdown {
         template /markdown.tmpl
     }
@@ -12,5 +14,13 @@
     }
     sentry {
         span {path}
+    }
+}
+:2017 {
+    route {
+        admin_ui
+        reverse_proxy localhost:2019 {
+            header_up Host localhost:2019
+        }
     }
 }
