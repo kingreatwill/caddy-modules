@@ -3,6 +3,7 @@ COPY . .
 RUN xcaddy build \
     --with github.com/kingreatwill/caddy-modules/markdown@latest=./markdown \
     --with github.com/kingreatwill/caddy-modules/tracing-sentry@latest=./tracing-sentry \
+    --with github.com/kingreatwill/caddy-modules/admin-ui@latest=./admin-ui \
     --with github.com/caddyserver/forwardproxy@caddy2 \
     --with github.com/caddy-dns/dnspod@latest
 
