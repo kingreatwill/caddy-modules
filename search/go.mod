@@ -2,7 +2,10 @@ module github.com/kingreatwill/caddy-modules/search
 
 go 1.21.4
 
-require github.com/caddyserver/caddy/v2 v2.7.5
+require (
+	github.com/caddyserver/caddy/v2 v2.7.5
+	go.uber.org/zap v1.25.0
+)
 
 require (
 	filippo.io/edwards25519 v1.0.0 // indirect
@@ -24,6 +27,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
@@ -89,7 +93,6 @@ require (
 	go.step.sm/linkedca v0.20.1 // indirect
 	go.uber.org/mock v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.25.0 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0 // indirect
 	golang.org/x/mod v0.11.0 // indirect

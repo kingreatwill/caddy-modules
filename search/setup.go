@@ -6,9 +6,11 @@ import (
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 )
 
+const DirectiveName = "search"
+
 func init() {
 	caddy.RegisterModule(Search{})
-	httpcaddyfile.RegisterHandlerDirective("search", parseCaddyfile)
+	httpcaddyfile.RegisterHandlerDirective(DirectiveName, parseCaddyfile)
 }
 
 // parseCaddyfile sets up the handler from Caddyfile tokens. Syntax:
