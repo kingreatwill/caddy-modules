@@ -2,8 +2,6 @@ package search
 
 import (
 	"net/http"
-	"path/filepath"
-	"strings"
 
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
@@ -27,7 +25,7 @@ func (Search) CaddyModule() caddy.ModuleInfo {
 // Provision sets up the module. #caddy.Provisioner
 func (sch *Search) Provision(ctx caddy.Context) error {
 	sch.logger = ctx.Logger(sch)
-	
+
 	if sch.Root == "" {
 		sch.Root = "{http.vars.root}"
 	}
@@ -38,6 +36,12 @@ func (sch *Search) Provision(ctx caddy.Context) error {
 		sch.Regexp = "*"
 	}
 	// 开启定时任务
+	repl := ctx.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
+	root := repl.ReplaceAll(sch.Root, ".")
+	watch := NewNotifyFile()
+	if err := watch.WatchDir(root); err != nil {
+		return err
+	}
 	return nil
 }
 
