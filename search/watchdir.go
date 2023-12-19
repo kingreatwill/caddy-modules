@@ -1,7 +1,6 @@
 package search
 
 import (
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -13,10 +12,10 @@ import (
 type NotifyFile struct {
 	watch     *fsnotify.Watcher
 	logger    *zap.Logger
-	indexFunc func(path string)
+	indexFunc func(path string, remove bool)
 }
 
-func NewNotifyFile(logger *zap.Logger, indexFunc func(path string)) *NotifyFile {
+func NewNotifyFile(logger *zap.Logger, indexFunc func(path string, remove bool)) *NotifyFile {
 	w := new(NotifyFile)
 	w.watch, _ = fsnotify.NewWatcher()
 	w.indexFunc = indexFunc
@@ -24,8 +23,8 @@ func NewNotifyFile(logger *zap.Logger, indexFunc func(path string)) *NotifyFile 
 	return w
 }
 
-// 监控目录
-func (this *NotifyFile) WatchDir(dir string) error {
+// WatchDir 监控目录
+func (nf *NotifyFile) WatchDir(dir string) error {
 	//通过Walk来遍历目录下的所有子目录
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -38,70 +37,69 @@ func (this *NotifyFile) WatchDir(dir string) error {
 			if err != nil {
 				return err
 			}
-			err = this.watch.Add(path)
+			err = nf.watch.Add(path)
 			if err != nil {
 				return err
 			}
 		} else {
-			this.indexFunc(path)
+			nf.indexFunc(path, false)
 		}
 		return nil
 	})
 	if err != nil {
 		return err
 	}
-	go this.WatchEvent() //协程
+	go nf.WatchEvent() //协程
 	return nil
 }
 
-func (this *NotifyFile) WatchEvent() {
+func (nf *NotifyFile) WatchEvent() {
 	for {
 		select {
-		case ev := <-this.watch.Events:
+		case event, ok := <-nf.watch.Events:
 			{
-				this.logger.Debug("watch Events", zap.String("Name", ev.Name), zap.String("Op", ev.Op))
-				if ev.Op&fsnotify.Create == fsnotify.Create {
-					fmt.Println("创建文件 : ", ev.Name)
-					//获取新创建文件的信息，如果是目录，则加入监控中
-					file, err := os.Stat(ev.Name)
+				if !ok {
+					return
+				}
+				nf.logger.Debug("watch Events",
+					zap.String("Event", event.String()),
+				)
+				if event.Has(fsnotify.Create) {
+					file, err := os.Stat(event.Name)
 					if err != nil {
-						this.logger.Debug("watch Create Error", zap.String("Name", ev.Name), zap.Error(err))
+						nf.logger.Debug("watch Create Stat Error",
+							zap.String("Name", event.Name), zap.Error(err))
 						break
 					}
 					if file.IsDir() {
-						this.watch.Add(ev.Name)
+						err = nf.watch.Add(event.Name)
+						if err != nil {
+							nf.logger.Debug("watch Create Watch Add Error",
+								zap.String("Name", event.Name), zap.Error(err))
+						}
 					} else {
-						this.indexFunc(ev.Name)
+						nf.indexFunc(event.Name, false)
 					}
 				}
-
-				if ev.Op&fsnotify.Write == fsnotify.Write {
-					//fmt.Println("写入文件 : ", ev.Name)
+				if event.Has(fsnotify.Write) {
+					// 修改文件 或者 目录中新增和删除文件
+					nf.indexFunc(event.Name, false)
 				}
-
-				if ev.Op&fsnotify.Remove == fsnotify.Remove {
-					fmt.Println("删除文件 : ", ev.Name)
-					//如果删除文件是目录，则移除监控
-					fi, err := os.Stat(ev.Name)
-					if err == nil && fi.IsDir() {
-						this.watch.Remove(ev.Name)
-						fmt.Println("删除监控 : ", ev.Name)
+				if event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename) {
+					err := nf.watch.Remove(event.Name)
+					if err != nil {
+						nf.logger.Debug("watch Create Watch Remove/Rename Error",
+							zap.String("Name", event.Name), zap.Error(err))
 					}
-				}
-
-				if ev.Op&fsnotify.Rename == fsnotify.Rename {
-					//如果重命名文件是目录，则移除监控 ,注意这里无法使用os.Stat来判断是否是目录了
-					//因为重命名后，go已经无法找到原文件来获取信息了,所以简单粗爆直接remove
-					fmt.Println("重命名文件 : ", ev.Name)
-					this.watch.Remove(ev.Name)
-				}
-				if ev.Op&fsnotify.Chmod == fsnotify.Chmod {
-					this.logger.Debug("watch Chmod", zap.String("Name", ev.Name))
+					nf.indexFunc(event.Name, true)
 				}
 			}
-		case err := <-this.watch.Errors:
+		case err, ok := <-nf.watch.Errors:
 			{
-				this.logger.Debug("watch Errors", zap.Error(err))
+				if !ok {
+					return
+				}
+				nf.logger.Debug("watch Errors", zap.Error(err))
 				return
 			}
 		}
