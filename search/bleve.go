@@ -1,31 +1,19 @@
 package search
 
 import (
-	"fmt"
-	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/v2"
 )
 
-func sd() {
-	message := struct {
-		Id   string
-		From string
-		Body string
-	}{
-		Id:   "example",
-		From: "marty.schoch@gmail.com",
-		Body: "bleve indexing is easy",
-	}
-
-	mapping := bleve.NewIndexMapping()
-	index, err := bleve.New("example.bleve", mapping)
+func CreateIndex() (bleve.Index, error) {
+	open, err := bleve.Open("caddy.bleve")
 	if err != nil {
-		index, err = bleve.Open("example.bleve")
+		if err != bleve.ErrorIndexPathDoesNotExist {
+			return nil, err
+		}
+		open, err = bleve.New("caddy.bleve", bleve.NewIndexMapping())
+		if err != nil {
+			return nil, err
+		}
 	}
-	index.Index(message.Id, message)
-
-	//index, _ := bleve.Open("example.bleve")
-	query := bleve.NewQueryStringQuery("bleve")
-	searchRequest := bleve.NewSearchRequest(query)
-	searchResult, _ := index.Search(searchRequest)
-	fmt.Println(searchResult)
+	return open, nil
 }

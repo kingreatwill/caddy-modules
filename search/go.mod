@@ -3,7 +3,7 @@ module github.com/kingreatwill/caddy-modules/search
 go 1.21.4
 
 require (
-	github.com/blevesearch/bleve v1.0.14
+	github.com/blevesearch/bleve/v2 v2.3.10
 	github.com/caddyserver/caddy/v2 v2.7.5
 	github.com/fsnotify/fsnotify v1.7.0
 	go.uber.org/zap v1.25.0
@@ -16,35 +16,41 @@ require (
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
-	github.com/RoaringBitmap/roaring v0.4.23 // indirect
+	github.com/RoaringBitmap/roaring v1.2.3 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr/v4 v4.0.0-20230305170008-8188dc5388df // indirect
 	github.com/aryann/difflib v0.0.0-20210328193216-ff5ff6dc229b // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bits-and-blooms/bitset v1.2.0 // indirect
+	github.com/blevesearch/bleve_index_api v1.0.6 // indirect
+	github.com/blevesearch/geo v0.1.18 // indirect
 	github.com/blevesearch/go-porterstemmer v1.0.3 // indirect
-	github.com/blevesearch/mmap-go v1.0.2 // indirect
-	github.com/blevesearch/segment v0.9.0 // indirect
+	github.com/blevesearch/gtreap v0.1.1 // indirect
+	github.com/blevesearch/mmap-go v1.0.4 // indirect
+	github.com/blevesearch/scorch_segment_api/v2 v2.1.6 // indirect
+	github.com/blevesearch/segment v0.9.1 // indirect
 	github.com/blevesearch/snowballstem v0.9.0 // indirect
-	github.com/blevesearch/zap/v11 v11.0.14 // indirect
-	github.com/blevesearch/zap/v12 v12.0.14 // indirect
-	github.com/blevesearch/zap/v13 v13.0.6 // indirect
-	github.com/blevesearch/zap/v14 v14.0.5 // indirect
-	github.com/blevesearch/zap/v15 v15.0.3 // indirect
+	github.com/blevesearch/upsidedown_store_api v1.0.2 // indirect
+	github.com/blevesearch/vellum v1.0.10 // indirect
+	github.com/blevesearch/zapx/v11 v11.3.10 // indirect
+	github.com/blevesearch/zapx/v12 v12.3.10 // indirect
+	github.com/blevesearch/zapx/v13 v13.3.10 // indirect
+	github.com/blevesearch/zapx/v14 v14.3.10 // indirect
+	github.com/blevesearch/zapx/v15 v15.3.13 // indirect
 	github.com/caddyserver/certmagic v0.19.2 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
-	github.com/couchbase/vellum v1.0.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/dgraph-io/badger v1.6.2 // indirect
 	github.com/dgraph-io/badger/v2 v2.2007.4 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/glycerine/go-unsnap-stream v0.0.0-20181221182339-f9677308dec2 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect
+	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
 	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -62,6 +68,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jackc/pgx/v4 v4.18.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/libdns/libdns v0.2.1 // indirect
@@ -76,9 +83,10 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/onsi/ginkgo/v2 v2.9.5 // indirect
-	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.15.1 // indirect
 	github.com/prometheus/client_model v0.4.0 // indirect
@@ -97,12 +105,9 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/steveyen/gtreap v0.1.0 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/tailscale/tscert v0.0.0-20230806124524-28a91b69a046 // indirect
-	github.com/tinylib/msgp v1.1.0 // indirect
 	github.com/urfave/cli v1.22.14 // indirect
-	github.com/willf/bitset v1.1.10 // indirect
 	github.com/zeebo/blake3 v0.2.3 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.mozilla.org/pkcs7 v0.0.0-20210826202110-33d05740a352 // indirect
