@@ -23,7 +23,8 @@ export SENTRY_DEBUG="true"
 go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
 xcaddy build v2.7.5 --with github.com/kingreatwill/caddy-modules/markdown@v0.0.1=./markdown \
   --with github.com/kingreatwill/caddy-modules/tracing-sentry@v0.0.1=./tracing-sentry \
-  --with github.com/kingreatwill/caddy-modules/admin-ui@v0.0.1=./admin-ui
+  --with github.com/kingreatwill/caddy-modules/admin-ui@v0.0.1=./admin-ui \
+  --with github.com/kingreatwill/caddy-modules/search@v0.0.1=./search
 chmod +x caddy
 ./caddy run
 ```

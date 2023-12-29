@@ -1,11 +1,15 @@
 {
     debug
     admin localhost:2019
+    order search before file_server
     order markdown before file_server
     order sentry first
     order admin_ui before reverse_proxy
 }
 :2018 {
+    search {
+        
+    }
     markdown {
         template /markdown.tmpl
     }

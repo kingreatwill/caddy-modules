@@ -1,6 +1,7 @@
 package search
 
 import (
+	"encoding/json"
 	"net/http"
 	"os"
 	"regexp"
@@ -34,13 +35,13 @@ func (sch *Search) Provision(ctx caddy.Context) error {
 	sch.logger = ctx.Logger(sch)
 
 	if sch.Root == "" {
-		sch.Root = "{http.vars.root}"
+		sch.Root = "."
 	}
 	if sch.Endpoint == "" {
 		sch.Endpoint = "/search"
 	}
 	if sch.Regexp == "" {
-		sch.Regexp = "*"
+		sch.Regexp = ".*.md"
 	}
 	index, err := CreateIndex()
 	if err != nil {
@@ -48,10 +49,9 @@ func (sch *Search) Provision(ctx caddy.Context) error {
 	}
 	sch.index = index
 	// 监听文件变化
-	repl := ctx.Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
-	root := repl.ReplaceAll(sch.Root, ".")
+	sch.logger.Debug("Provision", zap.String("root", sch.Root))
 	sch.watch = NewNotifyFile(sch.logger, sch.IndexDoc)
-	go sch.watch.WatchDir(root)
+	go sch.watch.WatchDir(sch.Root)
 	return nil
 }
 
@@ -63,7 +63,94 @@ func (sch *Search) Validate() error {
 
 // ServeHTTP implements #caddyhttp.MiddlewareHandler.
 func (sch *Search) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) (err error) {
+	if r.URL.Path == sch.Endpoint {
+		if r.Header.Get("Accept") == "application/json" {
+			return sch.SearchJSON(w, r)
+		}
+		return sch.SearchHTML(w, r)
+	}
+	return next.ServeHTTP(w, r)
+}
+
+type Result struct {
+	Path string
+	Body []string
+}
+
+func (sch *Search) searchResult(r *http.Request) []Result {
+	q := r.URL.Query().Get("q")
+	indexResult := sch.Search(q)
+	results := make([]Result, 0, len(indexResult))
+	for key, value := range indexResult {
+		results = append(results, Result{
+			Path: key,
+			Body: value,
+		})
+	}
+	return results
+}
+
+// SearchJSON renders the search results in JSON format
+func (sch *Search) SearchJSON(w http.ResponseWriter, r *http.Request) error {
+	results := sch.searchResult(r)
+	jresp, err := json.Marshal(results)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(jresp)
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
 	return nil
+}
+
+// SearchHTML renders the search results in the HTML template
+func (sch *Search) SearchHTML(w http.ResponseWriter, r *http.Request) error {
+	results := sch.searchResult(r)
+	jresp, err := json.Marshal(results)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(jresp)
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	return nil
+
+	//indexResult := s.Indexer.Search(q)
+	//
+	//results := make([]Result, len(indexResult))
+	//
+	//for i, result := range indexResult {
+	//	results[i] = Result{
+	//		Path:     result.Path(),
+	//		Title:    result.Title(),
+	//		Modified: result.Modified(),
+	//		Body:     string(result.Body()),
+	//	}
+	//}
+	//
+	//qresults := QueryResults{
+	//	Context: httpserver.Context{
+	//		Root: http.Dir(s.SiteRoot),
+	//		Req:  r,
+	//		URL:  r.URL,
+	//	},
+	//	Query:   q,
+	//	Results: results,
+	//}
+	//
+	//var buf bytes.Buffer
+	//err := s.Config.Template.Execute(&buf, qresults)
+	//if err != nil {
+	//	return http.StatusInternalServerError, err
+	//}
+	//w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	//
+	//buf.WriteTo(w)
+	//return http.StatusOK, nil
 }
 
 // IndexDoc 索引文件
