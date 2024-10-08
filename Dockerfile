@@ -1,4 +1,4 @@
-FROM caddy:2.7.5-builder-alpine AS builder
+FROM caddy:2.8.4-builder-alpine AS builder
 COPY . .
 RUN xcaddy build \
     --with github.com/kingreatwill/caddy-modules/markdown@latest=./markdown \
@@ -7,7 +7,7 @@ RUN xcaddy build \
     --with github.com/caddyserver/forwardproxy@caddy2 \
     --with github.com/caddy-dns/dnspod@latest
 
-FROM caddy:2.7.5-alpine
+FROM caddy:2.8.4-alpine
 LABEL maintainer "wcoder <350840291@qq.com>"
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 # validate install
