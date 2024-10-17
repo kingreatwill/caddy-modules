@@ -2,6 +2,7 @@ package markdown
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/fs"
 	"log"
@@ -13,10 +14,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 	"github.com/kingreatwill/caddy-modules/markdown/convert"
+	"github.com/kingreatwill/caddy-modules/markdown/git"
 	"github.com/kingreatwill/caddy-modules/markdown/template"
 	"go.uber.org/zap"
 )
@@ -32,6 +35,8 @@ type Markdown struct {
 	engine     *convert.MarkdownConvert
 	fileSystem fs.FS
 	logger     *zap.Logger
+
+	gitMap sync.Map
 }
 
 var bufPool = sync.Pool{
@@ -47,6 +52,7 @@ func (Markdown) CaddyModule() caddy.ModuleInfo {
 			return &Markdown{
 				engine:     convert.New(),
 				fileSystem: osFS{},
+				gitMap:     sync.Map{},
 			}
 		},
 	}
@@ -201,11 +207,47 @@ func (md *Markdown) getRoot(r *http.Request) string {
 	return repl.ReplaceAll(md.Root, ".")
 }
 
+func (md *Markdown) getGitStats(gitRoot string) (string, string) {
+	startDate := time.Now().AddDate(0, -11, 0).Format("2006-01-02")
+	data := make(map[string]int64)
+	dv, ok := md.gitMap.Load(startDate)
+	if ok {
+		data = dv.(map[string]int64)
+	} else {
+		data = git.GitStats(gitRoot)
+		md.gitMap.Store(startDate, data)
+		// 删除上一天的缓存
+		preDate := time.Now().AddDate(0, -11, -1).Format("2006-01-02")
+		md.gitMap.Delete(preDate)
+	}
+
+	dataArr := []struct {
+		Date  string `json:"date"`
+		Value int64  `json:"value"`
+	}{}
+	for k, v := range data {
+		dataArr = append(dataArr, struct {
+			Date  string `json:"date"`
+			Value int64  `json:"value"`
+		}{
+			Date:  k,
+			Value: v,
+		})
+	}
+	databytes, err := json.Marshal(dataArr)
+	if err != nil {
+		log.Println("json error", err)
+		return startDate, "[]"
+	}
+	return startDate, string(databytes)
+}
+
 func (md *Markdown) getTemplateData(r *http.Request) (data *convert.TemplateData, err error) {
 	data = &convert.TemplateData{
 		CurrentDirs: []convert.TemplateFileItemData{},
 	}
 	root := md.getRoot(r)
+	data.GitStartDate, data.GitStatsData = md.getGitStats(root)
 	filename := strings.TrimSuffix(caddyhttp.SanitizedPathJoin(root, r.URL.Path), "/")
 
 	info, err := fs.Stat(md.fileSystem, filename)

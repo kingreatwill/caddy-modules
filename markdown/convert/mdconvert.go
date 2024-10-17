@@ -62,6 +62,9 @@ type TemplateData struct {
 	Content       []byte                 `remark:"md"`
 	MdHtml        string                 `remark:"html"`
 	UpperPath     string                 `remark:"上一级连接"`
+
+	GitStartDate string `remark:"一年前的日期"`
+	GitStatsData string `remark:"截止到目前为止所有的每日提交数量"`
 }
 
 type TemplateFileItemData struct {
@@ -101,7 +104,7 @@ func (c *MarkdownConvert) Convert(mdStr string, data *TemplateData) (err error) 
 		data.Title = fmt.Sprintf("%v", value)
 	}
 
-	keywordsFunc := func (value interface{})  {
+	keywordsFunc := func(value interface{}) {
 		if newValue, ok := value.([]interface{}); ok {
 			var tags []string
 			for _, tag := range newValue {
@@ -111,7 +114,7 @@ func (c *MarkdownConvert) Convert(mdStr string, data *TemplateData) (err error) 
 		} else {
 			data.Keywords = fmt.Sprintf("%v", value)
 		}
-	} 
+	}
 	if value, ok := metaData["Keywords"]; ok {
 		keywordsFunc(value)
 	} else if value, ok := metaData["keywords"]; ok {
@@ -121,7 +124,6 @@ func (c *MarkdownConvert) Convert(mdStr string, data *TemplateData) (err error) 
 	} else if value, ok := metaData["tags"]; ok {
 		keywordsFunc(value)
 	}
-
 
 	if value, ok := metaData["Description"]; ok {
 		data.Description = fmt.Sprintf("%v", value)

@@ -12,8 +12,88 @@
     <script defer src="https://unpkg.com/katex@0.15.1/dist/katex.min.js" integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx" crossorigin="anonymous"></script>
     <script defer src="https://unpkg.com/katex@0.15.1/dist/contrib/auto-render.min.js" integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR" crossorigin="anonymous"></script>
     <script src="/static/js/icons.js"></script>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <link rel="stylesheet" href="https://unpkg.com/cal-heatmap@4.2.4/dist/cal-heatmap.css">    
+    <script src="https://unpkg.com/cal-heatmap@4.2.4/dist/cal-heatmap.min.js"></script>
+    <script src="https://unpkg.com/cal-heatmap@4.2.4/dist/plugins/LegendLite.min.js"></script>  
+    <script src="https://unpkg.com/cal-heatmap@4.2.4/dist/plugins/Tooltip.min.js"></script>
+    <script src="https://unpkg.com/cal-heatmap@4.2.4/dist/plugins/CalendarLabel.min.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        const cal = new CalHeatmap();
+        function calPrevious(e) {
+            e.preventDefault();
+            cal.previous();
+        }
+        function calNext(e) {
+            e.preventDefault();
+            cal.next();
+        }
+        // const calDataSource = [
+        //     { date: '2024-10-01', value: 1 },
+        // ];
+        const calDataSource = {{.GitStatsData}}
+
+        const calData = {
+                data: {
+                    source: calDataSource,
+                    x: 'date',
+                    y: 'value',
+                },
+                date: { start: new Date('{{.GitStartDate}}') },
+                range: 12,
+                scale: {
+                    color: {
+                        type: 'threshold',
+                        range: ['#4dd05a','#37a446','#166b34','#14432a', ],
+                        domain: [2, 5, 10],
+                    },
+                },
+                domain: {
+                    type: 'month',
+                    gutter: 4,
+                    label: { text: 'MMM', textAlign: 'start', position: 'top' },
+                },
+                subDomain: { type: 'ghDay', radius: 2, width: 11, height: 11, gutter: 4 },
+                itemSelector: '#cal-heatmap',
+         }
+
+        const calOpts = [
+                [Tooltip,
+                {
+                    text: function (date, value, dayjsDate) {
+                        return (
+                            (value ? value : 'No') +
+                            ' contributions on ' +
+                            dayjsDate.format('dddd, MMMM D, YYYY')
+                        );
+                    },
+                },
+                ],
+                [LegendLite,
+                {
+                    includeBlank: true,
+                    itemSelector: '#cal-heatmap-legend',
+                    radius: 2,
+                    width: 11,
+                    height: 11,
+                    gutter: 4,
+                },
+                ],
+                [CalendarLabel,
+                {
+                    width: 30,
+                    textAlign: 'start',
+                    text: () => dayjs.weekdaysShort().map((d, i) => (i % 2 == 0 ? '' : d)),
+                    padding: [25, 0, 0, 0],
+                },
+                ],
+            ];
+
+
+        document.addEventListener("DOMContentLoaded", function() {           
+
             renderMathInElement(document.body, {
                 strict: "ignore",
                 trust: ["\\htmlId"],
@@ -42,6 +122,9 @@
                 },
                 throwOnError: false,
             });
+
+            cal.paint(calData, calOpts);
+
         });
     </script>
 </head>
@@ -67,9 +150,25 @@
         <div class="markdown">{{.MdHtml}}</div>
     </div><!--end of layout-main-->
 </div><!--end of layout-->
+
+<div style="color: #adbac7; border-radius: 3px; padding: 1rem; overflow: hidden; max-width: 58em;">
+    <div id="cal-heatmap" class="margin-bottom--md"></div>
+    <a style="display: display;" class="button button--sm button--secondary margin-top--sm" href="#" onclick="calPrevious(event)">
+    ← Previous
+    </a>
+    <a style="display: display;" class="button button--sm button--secondary margin-top--sm margin-left--xs" href="#" onclick="calNext(event)">
+    Next →
+    </a>
+    <div style="float: right; font-size: 12px;">
+    <span style="color: #768390">Less</span>
+    <div id="cal-heatmap-legend" style="display: inline-block; margin: 0px 4px;"></div>
+    <span style="color: #768390; font-size: 12px;">More</span>
+    </div>
+</div>
 <footer>
 Served with <a rel="noopener noreferrer" href="https://github.com/kingreatwill/caddy-modules">caddy markdown</a>
 </footer>
 <script src="https://unpkg.com/mermaid@8.13.3/dist/mermaid.min.js"></script>
+
 </body>
 </html>
