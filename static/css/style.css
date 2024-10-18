@@ -93,7 +93,21 @@
 }
 
 footer {
-	padding: 40px 20px;
+	padding: 30px 20px;
 	font-size: 12px;
 	text-align: center;
+}
+
+header {
+	height: 50px;
+    background-color: white;
+    border-bottom: 0.05rem solid rgb(222 226 230);
+    padding: 10px;
+}
+
+header div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 50px;
 }
