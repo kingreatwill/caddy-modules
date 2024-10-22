@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	katex "github.com/kingreatwill/goldmark-katex"
+	katex "github.com/kingreatwill/goldmark-katex/v2"
 	"github.com/yuin/goldmark"
 	emoji "github.com/yuin/goldmark-emoji"
 	highlighting "github.com/yuin/goldmark-highlighting"

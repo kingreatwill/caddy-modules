@@ -10,8 +10,6 @@
     <link rel="icon" href="/static/favicons/favicon.svg">
     <link rel="stylesheet" href="/static/css/katex/0.16.11/katex.min.css"></link>
     <script src="/static/js/icons.js"></script>
-    <script defer src="/static/js/katex/0.16.11/katex.min.js"></script>
-    <script defer src="/static/js/katex/0.16.11/auto-render.min.js"></script>    
     <script defer src="/static/js/mermaid/11.3.0/mermaid.min.js"></script>
 
     <script src="/static/js/d3/7.9.0/d3.v7.min.js"></script>
@@ -94,39 +92,8 @@
             ];
 
 
-        document.addEventListener("DOMContentLoaded", function() {           
-
-            renderMathInElement(document.body, {
-                strict: "ignore",
-                trust: ["\\htmlId"],
-                // delimiters: [{
-                //     left: "$$",
-                //     right: "$$",
-                //     display: true
-                // }, {
-                //     left: "\\[",
-                //     right: "\\]",
-                //     display: true
-                // }, {
-                //     left: "$",
-                //     right: "$",
-                //     display: false
-                // }, {
-                //     left: "\\(",
-                //     right: "\\)",
-                //     display: false
-                // }],
-                macros: {
-                    "\\eqref": "\\href{###1}{(\\text{#1})}",
-                    "\\ref": "\\href{###1}{\\text{#1}}",
-                    "\\label": "\\htmlId{#1}{}",
-                    "\\f": "#1f(#2)"
-                },
-                throwOnError: false,
-            });
-
+        document.addEventListener("DOMContentLoaded", function() {
             cal.paint(calData, calOpts);
-
         });
     </script>
 </head>
