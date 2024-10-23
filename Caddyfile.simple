@@ -1,0 +1,38 @@
+{
+    debug
+    admin localhost:2019
+    order search before file_server
+    order markdown before file_server
+    order sentry first
+    order admin_ui before reverse_proxy
+}
+:2018 {
+    search {
+        
+    }
+    markdown {
+        template /markdown.tmpl
+    }
+    file_server browse {
+        hide .git
+        index README.md index.html index.htm
+    }
+    sentry {
+        span {path}
+    }
+}
+:2017 {
+    route {
+        admin_ui
+        reverse_proxy localhost:2019 {
+            header_up Host localhost:2019
+        }
+    }
+}
+:2016 {
+    admin_ui
+    reverse_proxy localhost:2019 {
+        method GET
+        header_up Host localhost:2019
+    }
+}

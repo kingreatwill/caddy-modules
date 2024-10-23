@@ -1,7 +1,8 @@
 FROM caddy:2.8.4-builder-alpine AS builder
 COPY . .
-RUN apk add --no-cache gcc musl-dev
-RUN CGO_ENABLED=1 xcaddy build \
+# RUN apk add --no-cache gcc musl-dev
+# RUN CGO_ENABLED=1 xcaddy build \
+RUN xcaddy build \
     --with github.com/kingreatwill/caddy-modules/markdown@latest=./markdown \
     --with github.com/caddyserver/forwardproxy@caddy2 \
     --with github.com/caddy-dns/dnspod@latest \
